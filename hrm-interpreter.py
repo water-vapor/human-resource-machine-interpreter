@@ -1,10 +1,16 @@
-import glob
 import itertools
 import re
 
 
 def hmri(raw_code, inputs=[], memory_size=16, memory={}):
+    """Interpret human resource machine program.
 
+    Keyword arguments:
+    raw_code -- HRM code in a list, each element containing a line
+    memory_size -- total number of blocks
+    memory -- given memory state, dictionary
+
+    """
     # helper function
     def read_address(raw_addr):
         if raw_addr[-1] == ']':
@@ -12,6 +18,7 @@ def hmri(raw_code, inputs=[], memory_size=16, memory={}):
             assert point_to < memory_size
             assert point_to in memory
             address = memory[point_to]
+            assert isinstance(address, int)
         else:
             address = int(raw_addr)
         assert address < memory_size
@@ -81,6 +88,8 @@ def hmri(raw_code, inputs=[], memory_size=16, memory={}):
         elif current_line[0] == 'ADD':
             assert current_value is not None
             address = read_address(current_line[1])
+            assert isinstance(current_value, int) and isinstance(
+                memory[address], int)
             current_value = current_value + memory[address]
             program_counter += 1
             program_steps += 1
@@ -88,12 +97,20 @@ def hmri(raw_code, inputs=[], memory_size=16, memory={}):
         elif current_line[0] == 'SUB':
             assert current_value is not None
             address = read_address(current_line[1])
-            current_value = current_value - memory[address]
+            if isinstance(current_value, str) and \
+                    isinstance(memory[address], str):
+                current_value = ord(current_value) - ord(memory[address])
+            elif isinstance(current_value, int) and \
+                    isinstance(memory[address], int):
+                current_value = current_value - memory[address]
+            else:
+                assert False
             program_counter += 1
             program_steps += 1
 
         elif current_line[0] == 'BUMPUP':
             address = read_address(current_line[1])
+            assert isinstance(memory[address], int)
             memory[address] += 1
             current_value = memory[address]
             program_counter += 1
@@ -101,6 +118,7 @@ def hmri(raw_code, inputs=[], memory_size=16, memory={}):
 
         elif current_line[0] == 'BUMPDN':
             address = read_address(current_line[1])
+            assert isinstance(memory[address], int)
             memory[address] -= 1
             current_value = memory[address]
             program_counter += 1
