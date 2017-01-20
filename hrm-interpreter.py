@@ -12,21 +12,29 @@ def hmri(raw_code, inputs=[], memory_size=16, memory={}):
 
     """
     # helper function
+    def address_test(addr, target_must_exist=True):
+        assert isinstance(addr, int), "Address should be an integer"
+        assert addr < memory_size and addr >= 0, "Memory address out of bound"
+        if target_must_exist:
+            assert addr in memory, "The referenced memory is empty"
+
+    def current_value_test(val):
+        assert val is not None, "Value expected"
+
     def read_address(raw_addr):
         if raw_addr[-1] == ']':
             point_to = int(raw_addr[1:-1])
-            assert point_to < memory_size
-            assert point_to in memory
+            address_test(point_to)
             address = memory[point_to]
-            assert isinstance(address, int)
         else:
             address = int(raw_addr)
-        assert address < memory_size
+        address_test(address, target_must_exist=False)
         return address
 
     # check head
-    assert raw_code[0] == '-- HUMAN RESOURCE MACHINE PROGRAM --'
-    assert raw_code[1] == ''
+    assert (raw_code[0] == '-- HUMAN RESOURCE MACHINE PROGRAM'
+            and raw_code[1] == ''), "Invalid code head"
+
     # remove tail comments and spaces
     code = list(itertools.takewhile(lambda x: x != '', raw_code[2:]))
 
@@ -64,8 +72,7 @@ def hmri(raw_code, inputs=[], memory_size=16, memory={}):
             program_steps += 1
 
         elif current_line[0] == 'OUTBOX':
-            # cannot output an empty value
-            assert current_value is not None
+            current_value_test(current_value)
             outputs.insert(0, current_value)
             current_value = None
             program_counter += 1
@@ -79,23 +86,23 @@ def hmri(raw_code, inputs=[], memory_size=16, memory={}):
             program_steps += 1
 
         elif current_line[0] == 'COPYTO':
-            assert current_value is not None
+            current_value_test(current_value)
             address = read_address(current_line[1])
             memory[address] = current_value
             program_counter += 1
             program_steps += 1
 
         elif current_line[0] == 'ADD':
-            assert current_value is not None
+            current_value_test(current_value)
             address = read_address(current_line[1])
             assert isinstance(current_value, int) and isinstance(
-                memory[address], int)
+                memory[address], int), "You can only add integers"
             current_value = current_value + memory[address]
             program_counter += 1
             program_steps += 1
 
         elif current_line[0] == 'SUB':
-            assert current_value is not None
+            current_value_test(current_value)
             address = read_address(current_line[1])
             if (isinstance(current_value, str) and
                     isinstance(memory[address], str)):
@@ -104,13 +111,14 @@ def hmri(raw_code, inputs=[], memory_size=16, memory={}):
                     isinstance(memory[address], int)):
                 current_value = current_value - memory[address]
             else:
-                assert False
+                assert False, "You can only subtract letters and integers"
             program_counter += 1
             program_steps += 1
 
         elif current_line[0] == 'BUMPUP':
             address = read_address(current_line[1])
-            assert isinstance(memory[address], int)
+            assert isinstance(
+                memory[address], int), "You can only bump up an integer"
             memory[address] += 1
             current_value = memory[address]
             program_counter += 1
@@ -118,7 +126,8 @@ def hmri(raw_code, inputs=[], memory_size=16, memory={}):
 
         elif current_line[0] == 'BUMPDN':
             address = read_address(current_line[1])
-            assert isinstance(memory[address], int)
+            assert isinstance(
+                memory[address], int), "You can only bump down an integer"
             memory[address] -= 1
             current_value = memory[address]
             program_counter += 1
@@ -130,7 +139,7 @@ def hmri(raw_code, inputs=[], memory_size=16, memory={}):
             program_steps += 1
 
         elif current_line[0] == 'JUMPZ':
-            assert current_value is not None
+            current_value_test(current_value)
             jump_label = current_line[1]
             if current_value == 0:
                 program_counter = labels[jump_label]
@@ -139,7 +148,7 @@ def hmri(raw_code, inputs=[], memory_size=16, memory={}):
             program_steps += 1
 
         elif current_line[0] == 'JUMPN':
-            assert current_value is not None
+            current_value_test(current_value)
             jump_label = current_line[1]
             if current_value < 0:
                 program_counter = labels[jump_label]
@@ -154,8 +163,9 @@ def hmri(raw_code, inputs=[], memory_size=16, memory={}):
 
     return [outputs, program_steps, program_size]
 
+
 def read_file(filename):
-    """Read Human Resource Machine Code File
+    """Read Human Resource Machine Code File.
 
     filename -- path of the code file
     """
