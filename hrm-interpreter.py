@@ -97,11 +97,11 @@ def hmri(raw_code, inputs=[], memory_size=16, memory={}):
         elif current_line[0] == 'SUB':
             assert current_value is not None
             address = read_address(current_line[1])
-            if isinstance(current_value, str) and \
-                    isinstance(memory[address], str):
+            if (isinstance(current_value, str) and
+                    isinstance(memory[address], str)):
                 current_value = ord(current_value) - ord(memory[address])
-            elif isinstance(current_value, int) and \
-                    isinstance(memory[address], int):
+            elif (isinstance(current_value, int) and
+                    isinstance(memory[address], int)):
                 current_value = current_value - memory[address]
             else:
                 assert False
@@ -134,18 +134,18 @@ def hmri(raw_code, inputs=[], memory_size=16, memory={}):
             jump_label = current_line[1]
             if current_value == 0:
                 program_counter = labels[jump_label]
-                program_steps += 1
             else:
                 program_counter += 1
+            program_steps += 1
 
         elif current_line[0] == 'JUMPN':
             assert current_value is not None
             jump_label = current_line[1]
             if current_value < 0:
                 program_counter = labels[jump_label]
-                program_steps += 1
             else:
                 program_counter += 1
+            program_steps += 1
 
         else:
             program_counter += 1
@@ -153,3 +153,12 @@ def hmri(raw_code, inputs=[], memory_size=16, memory={}):
         program_finished = program_counter >= program_length
 
     return [outputs, program_steps, program_size]
+
+def read_file(filename):
+    """Read Human Resource Machine Code File
+
+    filename -- path of the code file
+    """
+    with open(filename) as f:
+        code = f.readlines()
+    return [x.strip() for x in code]
